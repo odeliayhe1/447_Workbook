@@ -1,0 +1,151 @@
+---
+title: "Week 3 Workbook"
+author: "Odelia"
+date: "3/10/2021"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Question 1: Why is this graph not printing any output?**
+
+This is because "geom_point" is not in the code. It is important for "geom_point" to be in the code as it tells R to create the scatterplot. Geom defines the layout of the ggplot layer while point defines the layout to be a scatterplot. If "geom_point" is missing from the code, R will not know that I want my data to be displayed as a plot and specifically, a scatterplot. For the plot to display successfully, after loading tidyverse, the code should be as such: 
+ggplot(data = mtcars) + geom_point(mapping = aes(x = mpg, y = wt, colour=factor(cyl)))
+
+**Question 2. Using the mpg dataset, graph the relationship between city mileage and highway mileage by year manufacture.**
+
+```{r}
+library(tidyverse)
+ggplot(data = mpg) + geom_point(mapping = aes(x = cty, y = hwy, colour=factor(year))) + labs(title =  "Relationship between city mileage and highway mileage by year in mpg")
+```
+
+**Question 3. Edit this graph so that the x axis and the y axis both start at 0**
+
+This can be done by adding "expand_limits(x = 0, y = 0)" to the code.
+
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  labs(title = "Relationship bewtween engine displacement and fuel efficiency in the mpg automobile dataset") + 
+  xlab("Engine displacement in (units)") + 
+  ylab("Highway miles per liter") + expand_limits(x = 0, y = 0)
+```
+
+**Question 4: what is one benefit and one limitation for this graph above (in which the x and y values start at 0?)**
+
+Limitation: Real world applications for internal combustion engines will always have a value greater than 0. Likewise for data that can never logically be 0, having both the x and y axes at 0 would unnecessarily make the graph's data points more compressed together and therefore harder to read than a truncated graph.
+
+Benefit: On the other hand, truncated diagrams will distort the underlying numbers visually. A diagram that starts at 0 minimises the likelihood of people visually overestimating differences in data points. 
+
+**Question 5. Which of these two graphs do you prefer and why?**
+
+I prefer the graph with the data points categorised by colours. Categorising data points by colours makes it easier and more comfortable for the brain to differentiate data points than if they were categorised by shapes. Especially in a dataset with a large number of data points or data points with underlying numbers that are really close or stack on top of one another, having the data points differentiated by colours would be easier to discern one data point from another, and also notice any trends in the data. It is also easier to associate the categories with their relative colours as colours attract the human eye and stimulate the brain more so than shapes. It is also empirically evident in research studies that colours have the tendency to capture better attention level, and thus, better memory than shapes.
+
+**Question 6. add a facet to this graph for the “class” variable**
+
+```{r}
+g2 <-ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, shape =  class )) + scale_shape_manual(values = c(1:7)) +
+  labs(title = "Relationship between engine displacement and fuel efficiency in the mpg automobile dataset") + 
+  xlab("Engine displacement in (units)") + 
+  ylab("Highway miles per liter") 
+g2 + facet_wrap(~ class, nrow = 2)
+```
+
+I have to add "scale_shape_manual(values = c(1:7))" in order for the 7th class of data points to be plotted as the shape palette can only deal with a maximum of 6 discrete values. Without it, data points for "suv" class will not be plotted or appear on the graph.
+
+**Question 7. which graph is more informative and why?**
+
+My opinion is that graph b is more informative. The use of facet for this data allows for a clear visualisation of the relationship between engine displacement and fuel efficiency within the individual classes of cars. It also clearly shows us the differences within each classes and also inter-class differences as well. Without facets, a single scatterplot (graph a) will be overly dense with information that overlaps one another. Graph a will allow us to plot best fit lines that tells us that the higher the engine displacement, the lower the fuel efficiency. It will still be visible to see the differences between the classes due to the colour differentiation but it will not be able to tell us information of each classes and the differences within. Hence, graph b is more informative.
+
+**Question 8. remove the legend from the facet graph above (g4)**
+clea
+I can remove the legend from the facet graph above by adding "theme(legend.position = "none")" to the code.
+
+```{r}
+g4 <- ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, y = hwy, color = class)) +
+  facet_wrap( ~ class, nrow = 2)
+g4 + theme(legend.position = "none")
+```
+
+**Question 9 Convert the y variable to “numeric” and graph the relationship betweeen religiosity (x-axis) and `thr_ms`` (y-axis) in the ISSP dataset. Create new axis labels**
+
+```{r}
+issp <- readr::read_csv2(url("https://raw.githubusercontent.com/go-bayes/psych-447/main/data/issp.csv"))
+head(issp)
+str(issp)
+ip <- issp %>%
+  mutate(
+    id = factor(id),
+    thr_ath = as.factor(thr_ath),
+    thr_bd = as.factor(thr_bd),
+    thr_ch = as.factor(thr_ch),
+    thr_hd = as.factor(thr_hd),
+    thr_jw = as.factor(thr_jw),
+    thr_ms = as.factor(thr_ms),
+    neg_ath = as.factor(neg_ath),
+    neg_bd = as.factor(neg_bd),
+    neg_ch = as.factor(neg_ch),
+    neg_hd  = as.factor(neg_hd),
+    neg_jw = as.factor(neg_jw),
+    neg_ms = as.factor(neg_ms),
+    wave  = as.factor(wave),
+    nzeuro = as.factor(nzeuro),
+    eduyears = as.numeric(eduyears),
+    male = as.factor(male),
+    age = as.numeric(age),
+    rightwing = as.numeric(rightwing),
+    rural = as.factor(rural),
+    religiosity = as.numeric(religiosity)
+  )
+a <- as.numeric(as.factor(ip$thr_ms))
+```
+
+To convert "thr_ms" to numeric, I added the code as such: a <- as.numeric(as.factor(ip$thr_ms))
+
+I then plot the relationship between religiosity and 'thr_ms' as such:
+
+```{r}
+ggplot(data = ip, aes(y = a, x = religiosity))  +  geom_jitter(alpha = .1) + scale_y_continuous(limits = c(1,4)) + labs(title =  "Relationship between Religiosity and Thr_ms")
+```
+
+To create new axis labels, I added in the following codes: xlab("States of religiosity") and ylab("Threatened by Muslims")
+
+```{r}
+ggplot(data = ip, aes(y = a, x = religiosity))  +  geom_jitter(alpha = .1) + scale_y_continuous(limits = c(1,4)) + labs(title =  "Relationship between Religiosity and Thr_ms") + xlab("States of religiosity") + ylab("Threatened by Muslims")
+```
+
+**Question 10. Note that I have the following graph should start from 1 and run to 4 but currently runs from 0-4. Fix the graph**
+
+The graph can be fixed by changing the limit for the y-axis from 0 to 1: scale_y_continuous(limits = c(1,4))
+
+```{r}
+ggplot(data = ip, aes(y = a, x = religiosity, colour = wave))  +  geom_jitter(alpha = .1) + 
+  geom_smooth(method = lm, fullrange = FALSE, alpha = 0.1) +
+   scale_y_continuous(limits = c(1,4)) + ylab("Threatened by Muslims")
+```
+
+**Extra Question 11. Find one way of improving the following code and explain your answer**
+
+I can improve the code by adding "show.values = F" and changing the x-axis text element angle from '20' to '0'. By doing so, I am improving the code by making it an APA-formatted document suitable for reporting in scientific research. In order for a figure/graph to be suitable for reporting in an APA document, values should not be included in the graph. Values are only reported in the results writeup. I have done so by adding "show.value = F" into the code. The x-axis labels should also be parallel to the axis instead of being in an angle. Therefore, the need to change the angle to '0'. The result graph would be as such:
+
+```{r}
+library(sjPlot) 
+plot_xtab(
+    ip$thr_ms,
+    ip$wave,
+    show.total = F,
+    show.n = F, 
+    show.values = F,
+    geom.colors = c("lightgreen", "darkred")
+  ) +
+  xlab("Threatened by Muslims") +  ylab("Frequency") +
+  #scale_y_continuous(limits=c(0,7)) + #theme(plot.title = element_text(size=09))
+  theme(axis.text.x = element_text(angle = 0))
+```
