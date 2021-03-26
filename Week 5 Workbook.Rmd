@@ -1,0 +1,175 @@
+---
+title: "Week 5 Workbook"
+author: "Odelia"
+date: "3/24/2021"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Import data**
+
+```{r}
+library(tidyverse)
+library(patchwork)
+library(lubridate)
+library(kableExtra)
+library(sjPlot)
+library(ggplot2)
+library(gtsummary)
+nz_0 <- readr::read_csv2(url("https://raw.githubusercontent.com/go-bayes/psych-447/main/data/nz/nz.csv"))
+f<-c("None Of The Time","A Little Of The Time","Some Of The Time",  "Most Of The Time", "All Of The Time")
+nz <- nz_0 %>%
+  dplyr::mutate_if(is.character, factor) %>%
+  select(
+    -c(
+      SWB.Kessler01,
+      SWB.Kessler02,
+      SWB.Kessler03,
+      SWB.Kessler04,
+      SWB.Kessler05,
+      SWB.Kessler06
+    )
+  ) %>%
+  dplyr::mutate(Wave = as.factor(Wave)) %>%
+  mutate(FeelHopeless = forcats::fct_relevel(FeelHopeless, f)) %>%
+  mutate(FeelDepressed = forcats::fct_relevel(FeelDepressed, f)) %>%
+  mutate(FeelRestless = forcats::fct_relevel(FeelRestless, f)) %>%
+  mutate(EverythingIsEffort = forcats::fct_relevel(EverythingIsEffort, f)) %>%
+  mutate(FeelWorthless = forcats::fct_relevel(FeelWorthless, f)) %>%
+  mutate(FeelNervous = forcats::fct_relevel(FeelNervous, f)) %>%
+  dplyr::mutate(Wave = as.factor(Wave)) %>%
+  dplyr::mutate(male_id = as.factor(Male)) %>%
+  dplyr::mutate(date = make_date(year = 2009, month = 6, day = 30) + TSCORE)
+md_df <- data.frame(read.table(url("https://raw.githubusercontent.com/avehtari/ROS-Examples/master/PearsonLee/data/MotherDaughterHeights.txt"), header=TRUE))
+md_df <- md_df %>%
+  dplyr::mutate(mother_height_c = as.numeric(scale(mother_height, center = TRUE, scale = FALSE)))
+dplyr::glimpse(md_df)
+```
+
+**Question 1: Create a descriptive table and a descriptive graph for the HLTH.Weight and HLTH.Height variables in the nz dataset**
+
+```{r}
+library(table1)
+nz1<-nz%>%
+ dplyr::filter(Wave==2019) #to filter only 2019 data in the Wave column so that only 2019 data will be examined in the following work
+label(nz1$HLTH.Weight) <-"Weight" #to label the Weight data so that we know what the values represent
+label(nz1$HLTH.Height) <-"Height" #to label the Height data
+table1(~HLTH.Weight+HLTH.Height, data=nz1) #to create table of descriptive stats for weight and height data so that some basic information about weight and height is known
+ggplot(data = nz1) + #to tell R that we want to plot a graph using the nz1 dataset
+    geom_point(mapping = aes(x = HLTH.Weight, y = HLTH.Height)) + #to add the layer of a scatterplot and indicating weight to be the x-axis and height on the y-axis (descriptive graph of 2 continuous variables is a scatterplot)
+    labs(title = "Descriptive plot of weight and height in the nz1 dataset") + 
+    xlab("Weight") + 
+    ylab("Height") #labelling the title and axes so that we know what the graph is about
+```
+
+**Question 2: Write up a sample summary of the HLTH.Weight and HLTH.Height variables in the nz dataset in APA style**
+
+According to the analyses, the mean weight and standard deviation of the nz dataset for the sample in 2019 are 79.7 and 18.8 respectively. The median weight of the sample is 78.0, and the minimum and maximum values are 41.0 and 200. The mean height and standard deviation of the nz dataset for the sample in 2019 are 1.70 and 0.0984 respectively. The median height of the sample is 1.69, and the minimum and maximum values are 1.20 and 2.06. 
+
+Sample summary: 
+      Data of the weights and heights of a sample of 2063 people, aged 19 to 92, were collected for the nz dataset in 2019. More than half of the participants were women (63.3%). The data were collected as part of the New Zealand Attitudes and Values Study (NZAVS). Participants were recruited via online or post of a paper copy of the questionnaire. Data were collected and manipulated in R. A descriptive table was plotted using the “table1” function and a scatterplot was plotted to determine the relationship between weight and height using the “ggplot” package.
+
+**Question 3: Regression height ~ weight and report results**
+
+Regression model for height predicted by weight:
+```{r}
+lm(HLTH.Height~HLTH.Weight, data = nz1)
+```
+Height = 0.002(Weight) + 1.525
+
+Table of regression model:
+```{r}
+model <- lm(HLTH.Height~HLTH.Weight, data = nz1)
+tab_model(model)
+```
+
+Graph of regression model:
+```{r}
+ggplot(data = nz1) + 
+    geom_point(mapping = aes(x = HLTH.Weight, y = HLTH.Height)) +
+    labs(title = "Relationship between weight and height in the nz1 dataset") + 
+    xlab("Weight") + 
+    ylab("Height") + geom_smooth(mapping = aes(x = HLTH.Weight, y = HLTH.Height), se = FALSE)
+```
+
+The regression relationship between weight and height in the nz1 dataset was found to be statistically significant at p<0.001, as represented by "Height = 0.002(Weight) + 1.525". From the regression model, this relationship is a positive but subtle one as evident in the slope ("weight" coefficient). However, as depicted by the true line of best fit, this relationship appears to be a non-linear one. Nevertheless, despite several extreme outliers that skew the data away from a linear relationship, the general trend is that as weight increases, height also increases.
+
+**Question 4: Regress height ~ male_id and report results**
+
+Regression model for height predicted by male_id:
+```{r}
+lm(HLTH.Height~male_id, data = nz1)
+```
+Height = -0.1265(male_id) + 1.7777
+
+Table of regression model:
+```{r}
+model2 <- lm(HLTH.Height~male_id, data = nz1)
+tab_model(model2)
+```
+
+Graph of regression model:
+```{r}
+ggplot(data = nz1) +
+    geom_boxplot(aes(x = male_id, y = HLTH.Height, fill = male_id)) +
+    labs(title = "Boxplot for height predicted by gender in the nz1 dataset") +
+    xlab("Gender") +
+    ylab("Height") +
+    geom_abline(aes(intercept = 1.7777, slope = -0.1265), col="blue")
+```
+
+The regression relationship between gender and height in the nz1 dataset was found to be statistically significant at p<0.001, as represented by "Height = -0.1265(male_id) + 1.7777". The boxplot depicts that females have a lower overall, and mean height as compared to males. Furthermore, the downward regression line depicts a negative relationship as expressed by the negative slope in the regression model, i.e. that females tend to be shorter than males. 
+
+**Question 5: Using the regression coefficients from the Pearson and Lee 1903 dataset, predict the heights of daughters of women in the nz dataset.**
+
+load data:
+```{r}
+md_df <- data.frame(read.table(url("https://raw.githubusercontent.com/avehtari/ROS-Examples/master/PearsonLee/data/MotherDaughterHeights.txt"), header=TRUE))
+md_df <- md_df %>%
+  dplyr::mutate(mother_height_c = as.numeric(scale(mother_height, center = TRUE, scale = FALSE)))
+dplyr::glimpse(md_df)
+```
+
+Regression coefficients for daughter_height ~ mother_height in the Pearson and Lee 1903 dataset:
+```{r}
+m1 <- lm(daughter_height ~ mother_height, data = md_df)
+```
+
+To predict for the nz dataset:
+```{r}
+nz2<-nz1%>%
+  dplyr::filter(male_id=="Not_Male") #To get only the population of interest -> women
+table1(~male_id+HLTH.Height, data=nz2) #Min.Height = 1.20, Max.Height = 1.94
+nd<-expand.grid(mother_height = c(120:194))
+pr<-predict(m1, type = "response", interval = "confidence", newdata =nd)
+newdata<-data.frame(nd,pr)
+newdata
+```
+
+For visualisation:
+```{r}
+ggplot(data = newdata, 
+       aes(x= mother_height, y = fit)) + 
+    geom_point() + 
+    expand_limits(x = c(120,200), y = c(90,140)) + theme_classic() + 
+    labs(title = "Plot for predicting daughter_height of women in nz dataset")
+```
+
+**Question 6: On average, how much taller or shorter are women in New Zealand as sampled in 2019 nz dataset compared with women in 1903 as sampled in the Pearson and Lee dataset.**
+
+Height of women in New Zealand in 2019:
+```{r}
+table1(~HLTH.Height, data=nz2)
+```
+Height of women in 1903:
+```{r}
+table1(~daughter_height+mother_height, data = md_df)
+```
+
+Comparing the means, women sampled in New Zealand in 2019 are much taller than women sampled by Pearson and Lee in 1903 by around 1m.
