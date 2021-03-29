@@ -16,7 +16,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(tidyverse)
-library(patchwork)
 library(lubridate)
 library(kableExtra)
 library(sjPlot)
