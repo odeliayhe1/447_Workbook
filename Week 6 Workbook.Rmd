@@ -1,0 +1,166 @@
+---
+title: "Week 6 Workbook"
+author: "Odelia"
+date: "3/31/2021"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+Executive functions (EF) play an important role in children’s cognitive, behavioural, and social-emotional development, and are established as central self-regulatory abilities that coordinates cognitive processes for problem-solving and behaviour (Isquith et al., 2005). It is an important predictor for children’s academic performance and success in life (Diamond, 2013; Ten Eycke & Dewey, 2016). There are three core EF such as interference control (cognitive inhibition and selective attention), working memory, and cognitive flexibility (task switching or set-shifting); derived from these are higher-order EF such as planning, reasoning and problem-solving (Diamond, 2013). 
+
+Parent-reports and performance-based tasks are common assessments used to measure EF in children. Nevertheless, whilst there has been much progress on the development of clinical assessments for measuring EF in adults, there is a dearth of valid EF assessment tools for adolescents (Isquit et al., 2005; Nyongesa et al., 2019). This study aims to investigate the significance of parent-reports in evaluating child behaviour and functions. A significant correlation between parent-reports and child performance-based measures of EF would suggest that the use of parent-report as a predictor for EF development in adolescents may be extrapolated.
+
+Parents provide invaluable information regarding a child development alongside child performance-based measures. Parent-reports elucidate their children’s development with subjective observational information such as their personality characteristics, medical history, and behaviours at home (Diamond & Squires, 1993). These information are vital for developing more constructive child performance-based measures and providing quality clarification for their performance. A significant correlation between parent-reports and child performance-based measures of EF would suggest the importance of incorporating parent-reports in assessing child development and early intervention efforts.
+
+A meta-analysis will be conducted to examine the relationship between parent-report and child	performance-based measures as represented by EF. This study would contribute to the field of knowledge by allowing us to adequately and accurately evaluate the development of child behaviour and functioning by exploring and examining the predictability utility of parent-reports to child behaviour, as well as the validity of existing EF measures.
+
+## Summaries
+
+load tools:
+```{r}
+library(devtools)
+library(dplyr)
+library(readxl)
+library(kableExtra)
+library(ggplot2)
+```
+
+**This is the data I will be using for the research question.**
+
+load data from excel:
+```{r}
+ds <- read_excel("~/Desktop/PSYC447/447_Workbook/447_Workbook/Copy of Coding_sheet_MA.csv - Odelia's thesis - Coding_sheet_MA.csv - Included_studies.xlsx")
+```
+
+Summary table 1:
+```{r}
+tab1 <-  ds %>%
+     select(TOTALN, EF_DOMAIN, REPORT, WHO, R) %>%
+     group_by(WHO) %>%
+     summarise(
+         average_correlation =  mean(R, na.rm = TRUE),
+         sd_correlation  =  sd(R, na.rm = TRUE),
+         n  = n())
+tab1 %>%
+  kbl(caption = "Summary of correlations by person answering parent-report")
+```
+
+Summary graph 1:
+```{r}
+gr1 <- ds %>%
+     select(TOTALN, EF_DOMAIN, REPORT, WHO, R) %>%
+     group_by(WHO) %>%
+     summarise(
+         average_correlation =  mean(R, na.rm = TRUE),
+         sd_correlation  =  sd(R, na.rm = TRUE),
+         n  = n()) %>%
+  mutate(
+    se  = sd_correlation  / sqrt(n),
+    lw_ci = average_correlation  - qt(1 - (0.05 / 2), n  - 1) * se ,
+    up_ci = average_correlation  + qt(1 - (0.05 / 2), n  - 1) * se
+  ) %>%
+  ggplot(., aes(x = WHO, y = average_correlation , colour = average_correlation)) +
+  geom_errorbar(aes(ymin = lw_ci, ymax = up_ci), width = .1) +
+  geom_point(size = 3)  +
+  scale_y_continuous(limits = c(-1, 1)) +
+  theme_classic() + scale_fill_viridis_d()
+gr1
+```
+
+Tab1 and gr1 introduces the correlations between reports from the type of caregiver to EF measures (for child performance). Parent-report encompasses both parents and by extension, teachers, as they would be able to give similar observational information since children spend a large amount of time at school. Type of caregivers are encoded as such: 1 - Parent (unspecified), 2. Mother, 5. Teacher.
+
+Summary table 2:
+```{r}
+tab2 <- ds %>%
+     select(TOTALN, EF_DOMAIN, REPORT, WHO, R) %>%
+     group_by(EF_DOMAIN) %>%
+     summarise(
+         average_correlation =  mean(R, na.rm = TRUE),
+         sd_correlation  =  sd(R, na.rm = TRUE),
+         n  = n())
+tab2 %>%
+  kbl(caption = "Summary of correlations by EF domains")
+```
+
+Summary graph 2:
+```{r}
+gr2 <- ds %>%
+     select(TOTALN, EF_DOMAIN, REPORT, WHO, R) %>%
+     group_by(EF_DOMAIN) %>%
+     summarise(
+         average_correlation =  mean(R, na.rm = TRUE),
+         sd_correlation  =  sd(R, na.rm = TRUE),
+         n  = n()) %>%
+ mutate(
+    se  = sd_correlation  / sqrt(n),
+    lw_ci = average_correlation  - qt(1 - (0.05 / 2), n  - 1) * se ,
+    up_ci = average_correlation  + qt(1 - (0.05 / 2), n  - 1) * se
+  ) %>%
+  ggplot(., aes(x = EF_DOMAIN, y = average_correlation , colour = average_correlation)) +
+  geom_errorbar(aes(ymin = lw_ci, ymax = up_ci), width = .1) +
+  geom_point(size = 3)  +
+  scale_y_continuous(limits = c(-1, 1)) +
+  theme_classic() + scale_fill_viridis_d()
+gr2 
+```
+
+Tab2 and gr2 introduces the correlations between the EF domains tested in the parent-reports to EF measures (for child performance). EF domains are encoded as such: 1 - Inhibition, 2. working memory, 3. Shifitng, 4. Planning 5. Attention, 6. Others.
+
+Summary table 3:
+```{r}
+tab3 <- ds %>%
+     select(TOTALN, EF_DOMAIN, REPORT, WHO, R) %>%
+     group_by(REPORT) %>%
+     summarise(
+         average_correlation =  mean(R, na.rm = TRUE),
+         sd_correlation  =  sd(R, na.rm = TRUE),
+         n  = n())
+tab3 %>%
+  kbl(caption = "Summary of correlations by types of parent-report")
+```
+
+Summary graph 3:
+```{r}
+gr3 <- ds %>%
+     select(TOTALN, EF_DOMAIN, REPORT, WHO, R) %>%
+     group_by(REPORT) %>%
+     summarise(
+         average_correlation =  mean(R, na.rm = TRUE),
+         sd_correlation  =  sd(R, na.rm = TRUE),
+         n  = n()) %>%
+ mutate(
+    se  = sd_correlation  / sqrt(n),
+    lw_ci = average_correlation  - qt(1 - (0.05 / 2), n  - 1) * se ,
+    up_ci = average_correlation  + qt(1 - (0.05 / 2), n  - 1) * se
+  ) %>%
+  ggplot(., aes(x = REPORT, y = average_correlation , colour = average_correlation)) +
+  geom_errorbar(aes(ymin = lw_ci, ymax = up_ci), width = .1) +
+  geom_point(size = 3)  +
+  scale_y_continuous(limits = c(-1, 1)) +
+  theme_classic() + scale_fill_viridis_d()
+gr3
+```
+
+Tab3 and gr3 introduces the correlations between the types of parent-report measures to EF measures (for child performance). EF domains are encoded as such: 1 - BRIEF-P, 2. BRIEF, 3. ECBQ, 4. CBQ, 6. REEF, 7. CHEXI, 9, Others.
+
+
+### References:
+
+Diamond, A. (2013). Executive functions. Annual review of psychology, 64, 135-168.
+
+Diamond, K. E., & Squires, J. (1993). The role of parental report in the screening and assessment of young children. Journal of Early Intervention, 17(2), 107-115.
+
+Isquith, P. K., Crawford, J. S., Espy, K. A., & Gioia, G. A. (2005). Assessment of executive function in preschool‐aged children. Mental retardation and developmental disabilities research reviews, 11(3), 209-215.
+
+Nyongesa, M. K., Ssewanyana, D., Mutua, A. M., Chongwo, E., Scerif, G., Newton, C. R., & Abubakar, A. (2019). Assessing executive function in adolescence: A scoping review of existing measures and their psychometric robustness. Frontiers in psychology, 10, 311.
+
+Ten Eycke, K. D., & Dewey, D. (2016). Parent-report and performance-based measures of executive function assess different constructs. Child Neuropsychology, 22(8), 889-906.
