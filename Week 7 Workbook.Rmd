@@ -88,7 +88,12 @@ parameters::parameters(model1)%>%
 ```
 Model: Weight = 80.09 - 1.33(SleepHours) + 7.90
 
-This model tells us that the expected weight of the population who are at the mean sleep hours is 80.09. The expected increase in weight for each decrease in sleep hour is 1.33. The expected increase in weight for each unit of increase in height is 7.90.
+Single covariate regression plot:
+```{r}
+plot(ggeffects::ggpredict(model1, terms = c("sleephours_c","height_c")))
+```
+
+This model tells us that the expected weight of the population who are at the mean sleep hours is 80.09. The expected increase in weight for each decrease in sleep hour is 1.33. The expected increase in weight for each unit of increase in height is 7.90. This plot tells us that irregardless of height, more sleep predicts lower weight, but height does influence weight where the taller people are, the heavier they tend to be. 
 
 4. Write a multiple co-variate regression model and interpret your results, using graphs and tables as you deem helpful.
 
@@ -104,6 +109,7 @@ Multiple covariate regression plots:
 ```{r}
 sjPlot::plot_model(model2)
 plot(performance::check_collinearity(model2))
+plot(ggeffects::ggpredict(model2, terms = c("sleephours_c","height_c","fatigue_c")))
 ```
 
-This model tells us that with the addition of another covariate (fatigue), the expected weight of the population who are at the mean sleep hours is 80.17. The expected increase in weight for each decrease in sleep hour is 1.04. The expected increase in weight for each unit of increase in height is 8.07. The expected increase in weight for each unit of fatigueness 1.88. From the plots, we can see that height and fatigueness are positively correlated to weight while sleep hours is negatively correlated to weight. It is observed that there is no variance inflation factor as multicollinearity is not observed in this model.
+This model tells us that with the addition of another covariate (fatigue), the expected weight of the population who are at the mean sleep hours is 80.17. The expected increase in weight for each decrease in sleep hour is 1.04. The expected increase in weight for each unit of increase in height is 8.07. The expected increase in weight for each unit of fatigueness 1.88. From the plots, we can see that height and fatigueness are positively correlated to weight while sleep hours is negatively correlated to weight. It is observed that there is no variance inflation factor as multicollinearity is not observed in this model. There is a linearity in the predicted effects of sleep hours by height and fatigueness; height and fatigueness does not moderate weight by sleep hours.
