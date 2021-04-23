@@ -1,0 +1,109 @@
+---
+title: "Week 7 Workbook"
+author: "Odelia"
+date: "4/21/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+libraries
+```{r}
+library("tidyverse")
+library("patchwork")
+library("lubridate")
+library("kableExtra")
+library("gtsummary")
+library("lubridate")
+library("ggplot2")
+library("tidyLPA")
+```
+
+data
+```{r}
+nz_0 <- as.data.frame(readr::read_csv2(
+  url(
+    "https://raw.githubusercontent.com/go-bayes/psych-447/main/data/nzj.csv"
+  )
+))
+f <-
+  c(
+    "None Of The Time",
+    "A Little Of The Time",
+    "Some Of The Time",
+    "Most Of The Time",
+    "All Of The Time"
+  )
+nz <- nz_0 %>%
+  dplyr::mutate_if(is.character, factor) %>%
+  select(
+    -c(
+      SWB.Kessler01,
+      SWB.Kessler02,
+      SWB.Kessler03,
+      SWB.Kessler04,
+      SWB.Kessler05,
+      SWB.Kessler06
+    )
+  ) %>%
+  dplyr::mutate(Wave = as.factor(Wave)) %>%
+  mutate(FeelHopeless = forcats::fct_relevel(FeelHopeless, f)) %>%
+  mutate(FeelDepressed = forcats::fct_relevel(FeelDepressed, f)) %>%
+  mutate(FeelRestless = forcats::fct_relevel(FeelRestless, f)) %>%
+  mutate(EverythingIsEffort = forcats::fct_relevel(EverythingIsEffort, f)) %>%
+  mutate(FeelWorthless = forcats::fct_relevel(FeelWorthless, f)) %>%
+  mutate(FeelNervous = forcats::fct_relevel(FeelNervous, f)) %>%
+  dplyr::mutate(Wave = as.factor(Wave)) %>%
+  dplyr::mutate(male_id = as.factor(Male)) %>%
+  dplyr::mutate(date = make_date(year = 2009, month = 6, day = 30) + TSCORE)%>%
+  dplyr::filter(Wave == 2019)
+```
+
+1. 5 Variables: HLTH.Fatigue, HLTH.SleepHours, HLTH.height, HLTH.Weight, Gender
+
+```{r}
+table1::table1(~ HLTH.Weight + HLTH.Height + HLTH.Fatigue + HLTH.SleepHours + Gender, data = nz)
+```
+2. According to the table, the mean weight and standard deviation of the nz dataset for the sample in 2019 are 80.0 and 18.7 respectively. The median weight of the sample is 78.0, and the minimum and maximum values are 40.0 and 180. The mean height and standard deviation of the nz dataset for the sample in 2019 are 1.70 and 0.0966 respectively. The median height of the sample is 1.69, and the minimum and maximum values are 1.36 and 2.05. The mean fatigue level (oftenness in the last 30 days) and standard deviation of the nz dataset for the sample in 2019 are 1.53 and 1.06 respectively. The median fatigueness of the sample is 1.00, and the minimum and maximum values are 0 and 4.00. The mean sleep hours and standard deviation of the nz dataset for the sample in 2019 are 6.90 and 1.14 respectively. The median sleep hours of the sample is 7.00, and the minimum and maximum values are 2.00 and 15.0. The mean gender (where 1 is male and 0 is female) and standard deviation of the nz dataset for the sample in 2019 are 0.366 and 0.482 respectively. The median gender of the sample is 0 (female).
+
+3. Write a single co-variate regression model with a continuous outcome. Interpret your results, using graphs and tables as you deem helpful.
+
+To center:
+```{r}
+nz1 <- nz 
+nz1['height_c'] = as.data.frame(scale(nz1$HLTH.Height), scale = FALSE)
+nz1['sleephours_c'] = as.data.frame(scale(nz1$HLTH.SleepHours), scale = FALSE)
+nz1['fatigue_c'] = as.data.frame(scale(nz1$HLTH.Fatigue), scale = FALSE)
+```
+
+Single covariate regression model and table:
+```{r}
+model1 <- lm(HLTH.Weight ~ sleephours_c + height_c, data = nz1)
+parameters::parameters(model1)%>%
+    parameters::print_html(caption = "Weight as predicted by Sleep Hours and Height")
+```
+Model: Weight = 80.09 - 1.33(SleepHours) + 7.90
+
+This model tells us that the expected weight of the population who are at the mean sleep hours is 80.09. The expected increase in weight for each decrease in sleep hour is 1.33. The expected increase in weight for each unit of increase in height is 7.90.
+
+4. Write a multiple co-variate regression model and interpret your results, using graphs and tables as you deem helpful.
+
+Multiple covariate regression model and table:
+```{r}
+model2 <- lm(HLTH.Weight ~ sleephours_c + height_c + fatigue_c, data = nz1)
+parameters::parameters(model2)%>%
+    parameters::print_html(caption = "Weight as predicted by Sleep Hours, Height, and Fatigue")
+```
+Model: Weight = 80.17 - 1.04(SleepHours) + 8.07 + 1.88
+
+Multiple covariate regression plots:
+```{r}
+sjPlot::plot_model(model2)
+plot(performance::check_collinearity(model2))
+```
+
+This model tells us that with the addition of another covariate (fatigue), the expected weight of the population who are at the mean sleep hours is 80.17. The expected increase in weight for each decrease in sleep hour is 1.04. The expected increase in weight for each unit of increase in height is 8.07. The expected increase in weight for each unit of fatigueness 1.88. From the plots, we can see that height and fatigueness are positively correlated to weight while sleep hours is negatively correlated to weight. It is observed that there is no variance inflation factor as multicollinearity is not observed in this model.
