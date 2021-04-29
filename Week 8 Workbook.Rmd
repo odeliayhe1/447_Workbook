@@ -1,0 +1,101 @@
+---
+title: "Week 8 Workbook"
+author: "Odelia"
+date: "4/28/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+libraries
+```{r}
+library("tidyverse")
+library("patchwork")
+library("lubridate")
+library("kableExtra")
+library("gtsummary")
+library("lubridate")
+library("tidyLPA")
+library("ggplot2")
+library("performance")
+library("qqplotr")
+```
+
+read data
+```{r}
+nz_0 <- as.data.frame(readr::read_csv2(
+  url(
+    "https://raw.githubusercontent.com/go-bayes/psych-447/main/data/nzj.csv"
+  )))
+f <-
+  c(
+    "None Of The Time",
+    "A Little Of The Time",
+    "Some Of The Time",
+    "Most Of The Time",
+    "All Of The Time"
+  )
+nz <- nz_0 %>%
+  dplyr::mutate_if(is.character, factor) %>%
+  select(
+    -c(
+      SWB.Kessler01,
+      SWB.Kessler02,
+      SWB.Kessler03,
+      SWB.Kessler04,
+      SWB.Kessler05,
+      SWB.Kessler06
+    )
+  ) %>%
+  dplyr::mutate(Wave = as.factor(Wave)) %>%
+  mutate(FeelHopeless = forcats::fct_relevel(FeelHopeless, f)) %>%
+  mutate(FeelDepressed = forcats::fct_relevel(FeelDepressed, f)) %>%
+  mutate(FeelRestless = forcats::fct_relevel(FeelRestless, f)) %>%
+  mutate(EverythingIsEffort = forcats::fct_relevel(EverythingIsEffort, f)) %>%
+  mutate(FeelWorthless = forcats::fct_relevel(FeelWorthless, f)) %>%
+  mutate(FeelNervous = forcats::fct_relevel(FeelNervous, f)) %>%
+  dplyr::mutate(Wave = as.factor(Wave)) %>%
+  dplyr::mutate(male_id = as.factor(Male)) %>%
+  dplyr::mutate(date = make_date(year = 2009, month = 6, day = 30) + TSCORE)%>%
+  dplyr::filter(Wave == 2018)
+```
+
+**Write brief report that predicts belief in spirit or a life-force (Believe.Spirit) from no more than five covariates. Explain your model and results.**
+
+```{r}
+belief <- glm(Believe.Spirit ~ Spiritual.Identification, data = nz, family = "binomial")
+parameters::model_parameters(belief)
+plot(parameters::model_parameters(belief))
+ggplot(nz, (aes(Believe.Spirit, Spiritual.Identification))) + geom_jitter(alpha = .5)
+performance_accuracy(belief)
+equatiomatic::extract_eq(belief, use_coefs = TRUE)
+```
+
+A binary logistic regression was fitted to predict Believe.Spirit from Spiritual.Identification. The effect of Spiritual.Identification is significantly negative (beta = -0.70, 95% CI [-0.75, -0.64], p < .001; Std. beta = -1.42, 95% CI [-1.54, -1.31]). The chance of a type 1 error is 0.1%. As further clarified with the plots, plot 1 tells us that the the CI is narrow and thus a high accuracy of Spiritual.Identification being a predictor. Plot 2 tells us that Believe.Spirit can be predicted by increasing identification of spirituality. The plot also tells us that whilst the opposite is true, the rate of every increasing unit of Spiritual.Identification predicting for believing in spirit is visibly higher than the rate of decreasing unit of Spiritual.Identification predicting for not believing in spirit. The significant effect of Spiritual.Identification as a predictor for Believe.Spirit is also evident with the high accuracy of the model at over 80%.
+
+**Write report that predicts charitable donations (CharityDonate) from no more than five covariates. Explain your model and results.**
+
+```{r}
+library(MASS)
+pois <- glm(CharityDonate ~ Household.INC, data = nz, family = "poisson")
+parameters::model_parameters(pois)
+pois2 <- glm(CharityDonate ~ Household.INC + Standard.Living, data = nz, family = "poisson")
+parameters::model_parameters(pois2)
+pois3 <- glm(CharityDonate ~ Household.INC + Standard.Living + Religious, data = nz, family = "poisson")
+parameters::model_parameters(pois3)
+perf <- performance::compare_performance(pois,pois2,pois3)
+plot(perf)
+check_overdispersion(pois3)
+nb <- glm.nb(CharityDonate ~ Household.INC + Standard.Living + Religious, data = nz,)
+parameters::model_parameters(nb)
+plot(ggeffects::ggpredict(pois3, terms = "Household.INC"), add.data = TRUE)
+plot(ggeffects::ggpredict(nb, terms = "Household.INC"), add.data = TRUE)
+performance::check_model(nb)
+equatiomatic::extract_eq(nb, use_coefs = TRUE)
+```
+
+A poisson regression model was first fitted to predict CharityDonate from Household.INC, Standard.Living and Religious. 3 models were fitted with increasing covariate respectively; based on the tables and "perf" plot, pois3 (all 3 covariates) is observed to be the best model in predicting for CharityDonate. However, overdispersion was detected and the test was done. Dispersion ratio was above 1 and p-value was above .05. Hence, a negative binomial model was fitted instead. The effect of Household.INC is significantly positive (beta = 7.09e-06, 95% CI [6.29e-06, 7.91e-06], p < .001; Std. beta = 0.68, 95% CI [0.60, 0.75]). The effect of Standard.Living is significantly positive (beta = 0.20, 95% CI [0.16, 0.23], p < .001; Std. beta = 0.37, 95% CI [0.31, 0.44]). The effect of Religious [Religious] is significantly positive (beta = 1.28, 95% CI [1.14, 1.43], p < .001; Std. beta = 1.28, 95% CI [1.14, 1.43]). Although all 3 covariates are statistically significant in predicting for CharityDonate, Religious correlates the most out of the 3 covariates, followed by Standard.Living and Household.INC. The plots (pois3 against nb) tells us that the negative binomial regression model is the appropriate model to be used instead of a poisson regression or linear model. From the performance plots, we can tell that the covariates do not interact with one another which means that the assumption of multicollinearity is not violated. However, the assumptions for normality and homogeneity of variance appear to be violated. This tells us that the data is likely to be falsely skewed probably due to the outliers and that these results are likely not adequately representative of the population. Therefore, this model is informative but not as good as it typically needs to be as there is a higher likelihood of type I error.
