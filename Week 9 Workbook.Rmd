@@ -1,0 +1,197 @@
+---
+title: "Week 9 Workbook"
+author: "Odelia"
+date: "5/5/2021"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+library
+```{r}
+library("tidyverse")
+library("patchwork")
+library("lubridate")
+library("kableExtra")
+library("gtsummary")
+library("lubridate")
+library("equatiomatic")
+library("ggdag")
+library("brms")
+library("rstan")
+library("rstanarm")
+library("bayesplot")
+library("easystats")
+library("kableExtra")
+library("broom")
+library("tidybayes")
+library("bmlm")
+# rstan options
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores ())
+theme_set(theme_classic())
+```
+
+read data
+```{r}
+nz_0 <- as.data.frame(readr::read_csv2(
+  url(
+    "https://raw.githubusercontent.com/go-bayes/psych-447/main/data/nzj.csv"
+  )
+))
+
+# to relevel kessler 6 variables
+f <-
+  c(
+    "None Of The Time",
+    "A Little Of The Time",
+    "Some Of The Time",
+    "Most Of The Time",
+    "All Of The Time"
+  )
+nz_cr <- nz_0 %>%
+  dplyr::mutate_if(is.character, factor) %>%
+  select(
+    -c(
+      SWB.Kessler01,
+      SWB.Kessler02,
+      SWB.Kessler03,
+      SWB.Kessler04,
+      SWB.Kessler05,
+      SWB.Kessler06
+    )
+  ) %>%
+  dplyr::mutate(Wave = as.factor(Wave)) %>%
+  dplyr::mutate(FeelHopeless = forcats::fct_relevel(FeelHopeless, f)) %>%
+  dplyr::mutate(FeelDepressed = forcats::fct_relevel(FeelDepressed, f)) %>%
+  dplyr::mutate(FeelRestless = forcats::fct_relevel(FeelRestless, f)) %>%
+  dplyr::mutate(EverythingIsEffort = forcats::fct_relevel(EverythingIsEffort, f)) %>%
+  dplyr::mutate(FeelWorthless = forcats::fct_relevel(FeelWorthless, f)) %>%
+  dplyr::mutate(FeelNervous = forcats::fct_relevel(FeelNervous, f)) %>%
+  dplyr::mutate(Wave = as.factor(Wave)) %>%
+  dplyr::mutate(male_id = as.factor(Male)) %>%
+  dplyr::mutate(date = make_date(year = 2009, month = 6, day = 30) + TSCORE) %>%
+  dplyr::mutate(
+    FeelWorthless_int = as.integer(FeelWorthless),
+    FeelNervous_int =  as.integer(FeelNervous),
+    FeelHopeless_int =  as.integer(FeelHopeless),
+    EverythingIsEffort_int =  as.integer(EverythingIsEffort),
+    FeelRestless_int =  as.integer(FeelRestless),
+    FeelDepressed_int =  as.integer(FeelDepressed),
+    HLTH.Fatigue_int = as.integer(HLTH.Fatigue + 1)
+  ) %>%
+  dplyr::mutate(yearS = TSCORE - min(TSCORE, na.rm = TRUE)) %>%
+  dplyr::mutate(KESSLER6sum = as.integer(KESSLER6sum))
+nz2018 <- nz_cr %>%
+  dplyr::filter(Wave == 2018)
+ord_dates_class_2019_only <- c("PreCOVID",
+                               "JanFeb",
+                               "EarlyMarch",
+                               "Lockdown",
+                               "PostLockdown")
+
+nz2019 <- nz_cr %>%
+  dplyr::filter(YearMeasured == 1) %>%
+  dplyr::filter(Wave == 2019) %>%
+  dplyr::group_by(Id) %>%
+  dplyr::ungroup(Id) %>%
+  dplyr::mutate(Covid_Timeline_cr =
+                  as.factor(ifelse(
+                    TSCORE %in% 3896:3921,
+                    # feb 29 - march 25th
+                    "EarlyMarch",
+                    ifelse(
+                      TSCORE %in% 3922:3954,
+                      "Lockdown",
+                      #march 26- Mon 27 April 2020
+                      ifelse(
+                        TSCORE > 3954,
+                        # after april 27th 20202
+                        "PostLockdown",
+                        ifelse(TSCORE %in% 3842:3895,
+                               # jan 6 to feb 28
+                               "JanFeb",
+                               "PreCOVID")
+                      )
+                    )
+                  ))) %>%
+  dplyr::mutate(Covid_Timeline_cr = forcats::fct_relevel(Covid_Timeline_cr, ord_dates_class_2019_only))
+ord_dates_class <- c("Baseline",
+                     "PreCOVID",
+                     "JanFeb",
+                     "EarlyMarch",
+                     "Lockdown",
+                     "PostLockdown")
+nzl <- nz_cr %>%
+  dplyr::filter(YearMeasured == 1) %>%
+  dplyr::filter(Wave == 2018 | Wave == 2019) %>%
+  dplyr::group_by(Id) %>%
+  dplyr::filter(n() > 1) %>%
+  dplyr::filter(n() != 0) %>%
+  dplyr::ungroup(Id) %>%
+  dplyr::mutate(yearS = (TSCORE - min(TSCORE)/365)) %>%
+  dplyr::mutate(WSCORE = as.factor(WSCORE)) %>%
+  dplyr::mutate(Covid_Timeline =
+                  as.factor(ifelse(
+                    TSCORE %in% 3896:3921,
+                    # feb 29 - march 25th
+                    "EarlyMarch",
+                    ifelse(
+                      TSCORE %in% 3922:3954,
+                      "Lockdown",
+                      #march 26- Mon 27 April 2020
+                      ifelse(
+                        TSCORE > 3954,
+                        # after april 27th 20202
+                        "PostLockdown",
+                        ifelse(
+                          TSCORE %in% 3842:3895,
+                          # jan 6 to feb 28
+                          "JanFeb",
+                          ifelse(TSCORE %in% 3665:3841 &
+                                   Wave == 2019,
+                                 "PreCOVID",
+                                 "Baseline"  # 3672 TSCORE or  20 July 2019))))))))
+                          )
+                        )
+                      )
+                    ))))%>%
+  dplyr::mutate(Covid_Timeline = forcats::fct_relevel(Covid_Timeline, ord_dates_class))
+```
+
+**Write brief report that in which you estimating demographic and ideological predictors of attitudes to government surveillance (Issue.GovtSurveillance) and attitudes to (Issue.RegulateAI) in New Zealand in 2018**
+
+To center:
+```{r}
+nz2018_c <- nz2018 
+nz2018_c['Age'] = as.data.frame(scale(nz2018$Age), scale = FALSE)
+nz2018_c['Pol.Orient'] = as.data.frame(scale(nz2018$Pol.Orient), scale = FALSE)
+nz2018_c['PATRIOT'] = as.data.frame(scale(nz2018$PATRIOT), scale = FALSE)
+```
+
+Demographic and ideological predictors of attitudes towards government surveillance
+```{r}
+plot1 <- lm(Issue.GovtSurveillance ~ Age + Gender + Pol.Orient + PATRIOT, data = nz2018_c)
+parameters::parameters(plot1)
+sjPlot::plot_model(plot1)
+plot(ggeffects::ggpredict(plot1, terms = c("Age","Gender")))
+plot(ggeffects::ggpredict(plot1, terms = c("Pol.Orient","PATRIOT")))
+```
+Model: Issue.GovtSurveillance = 4.41 + 0.05(Age) - 0.07(Gender) + 0.39(Pol.Orient) + 0.32(PATRIOT)
+
+Age, Gender, Political Orientation, and level of Patriotism were plotted against attitudes towards government surveillance in a linear regression model. The effect of Age is non-significantly positive at p = 0.052, indicating that with the increase of age, positive attitudes towards government surveillance decreases although this effect is not statistically above chance. The effect of Gender is also non-significantly negative at p = 0.134, indicating that females tend to have a more positive outlook than males on government surveillance although this is effect is also not statistically above chance. The effect of Pol.Orient and PATRIOT are both significantly positive at p < .001, indicating that the more right-wing/conservative people are in their political ideologies, and also the more patriotic feelings they have towards the country, the more positive their attitudes are towards government surveillance. The linear trends of these relationships and their representativeness are clearly expressed in the plots. The parameters illustrate the size of predictor effects where political orientation has the largest effect in this model for predicting attitudes towards government surveillance, followed by patriotism, gender, and lastly age.
+
+Demographic and ideological predictors of attitudes towards development and use of Artificial Intelligence (AI)
+```{r}
+plot2 <- lm(Issue.RegulateAI ~ Age + Gender + Believe.Spirit + Religious, data = nz2018_c)
+parameters::parameters(plot2)
+plot(ggeffects::ggpredict(plot2, terms = c("Age","Gender","Believe.Spirit","Religious")))
+```
+Model: Issue.RegulateAI = 4.60 + 0.17(Age) - 0.48(Gender) - 0.32(Believe.Spirit) + 0.17(Religious)
+
+Age, Gender, Belief in Spirit, and Religiosity were plotted against attitudes towards development and use of Artificial Intelligence in a linear regression model. The effect of Age is significantly positive at p < .001, indicating that with the increase of age, attitudes for having strict and limiting regulations towards the development and use of AI increases as well. The effect of Gender is significantly negative at p < .001, indicating that males tend to be more against having strict and limiting regulations than females towards the development and use of AI. The effect of Believe.Spirit is significantly negative at p < .001, indicating that people who believes in spirits tend to be more supportive for strict and limiting regulations than people who do not believe in spirits towards the development and use of AI. The effect of Religious is significantly positive at p < .001, indicating that people who are more religious tend to be more suppotive for strict and limiting regulations than people who are less religious towards the development and use of AI. The linear trends of these relationships and their representativeness are clearly expressed in the plots. The parameters illustrate the size of predictor effects where gender has the largest effect in this model for predicting attitudes towards the development and use of AI, followed by belief in spirits, age, and lastly religiosity.
