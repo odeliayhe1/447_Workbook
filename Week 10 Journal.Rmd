@@ -1,0 +1,25 @@
+---
+title: "Week 10 Journal"
+author: "Odelia"
+date: "5/18/2021"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# _Week 10_
+
+Workbook 10 was too difficult for me, encountered too many errors and too many hard work lost.
+
+## _Hurdles_
+
+Creating the website and postcard was not difficult but the trouble came when I tried publishing the website. I used the codes to try to get it to publish on GitHub but it didn't work and even wiped my entire work clean. So I tried from the top again and met further problems like being unable to render site or the postcard just did not work altogether. I finally got it to work and for everything to appear nicely and tried the codes again. It gave me more errors and I'm terrified of clicking the wrong buttons that may cause my work to be wiped again. So I decided that I can't do this for this week.
+
+### _End of workbook_
+
+I have a neat accessible distill website, just that it's an unpublished one. Really disappointed that I couldn't get it to work but oh wells. 
